@@ -91,7 +91,7 @@ export default function Register() {
       );
       navigate(PATHS.LOGIN);
     } catch (error) {
-      console.log(error);
+      toast.error(error.response.message);
     } finally {
       setIsLoading(false);
     }

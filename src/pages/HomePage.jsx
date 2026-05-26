@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
 import { useShop } from "../context/ShopContext";
 import Navbar from "../components/Navbar";
-import { ADMIN, PATHS } from "../constants";
+import { ADMIN, ALL_CATEGORY, PATHS } from "../constants";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../lib/api";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import ProductCard from "../components/ProductCard";
-
-const ALL_CATEGORY = "All";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -40,9 +38,9 @@ export default function Home() {
         });
 
         if (response.data.success) {
-          setProducts(response.data.data);
+          setProducts(response.data.data.content);
           const uniqueCategories = [
-            ...new Set(response.data.data.map((p) => p.categoryName)),
+            ...new Set(response.data.data.content.map((p) => p.categoryName)),
           ];
 
           setCategories((prevState) => [...prevState, ...uniqueCategories]);
@@ -83,7 +81,7 @@ export default function Home() {
             </p>
             <div className="pt-2 flex flex-wrap gap-3">
               <button
-                onClick={() => navigate(PATHS.SEARCH_RESULTS + "?q=deals")}
+                onClick={() => navigate(PATHS.SEARCH_RESULTS + "?badge=SALE")}
                 className="bg-blue-600 text-white px-6 py-3 text-sm font-semibold hover:bg-blue-700 transition-colors rounded-lg shadow-sm"
               >
                 Shop Hot Deals

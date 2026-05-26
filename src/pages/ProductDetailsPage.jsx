@@ -4,26 +4,9 @@ import Navbar from "../components/Navbar";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { toast } from "react-toastify";
 import api from "../lib/api";
+import { BADGE_COLORS, PATHS, SCROLL_TOP_BEHAVIOR } from "../constants";
 
-// Detailed Singular Product Specimen (with integrated mock customer reviews)
 const INITIAL_PRODUCT = {
-  id: "prod-001",
-  name: "Pro Wireless Noise-Cancelling Headphones",
-  category: "Electronics",
-  price: 2499000,
-  sku: "NEX-HDP-0042",
-  description:
-    "Immersive sound architecture meeting hybrid active noise cancellation. Engineered with 40mm custom dynamic drivers to capture clinical acoustic balances alongside robust 40-hour long playback stamina modules.",
-  specs: [
-    "Driver Size: 40mm Dynamic",
-    "Battery Life: Up to 40 Hours (ANC On)",
-    "Connectivity: Bluetooth 5.3 & 3.5mm Aux Line",
-    "Charging Type: USB-C Fast Charge (5 min = 4 hours)",
-  ],
-  images: [
-    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=600&auto=format&fit=crop&q=80",
-  ],
   reviews: [
     {
       id: 1,
@@ -55,44 +38,19 @@ export default function ProductDetailsPage() {
   const productId = searchParams.get("id");
 
   const [product, setProduct] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
   const [isLoading, setLoading] = useState(false);
 
   const [selectedImage, setSelectedImage] = useState(null);
-  const [activeTab, setActiveTab] = useState("specs"); // 'specs' or 'reviews'
   const [, setCartCount] = useState(0);
 
-  // New Review Submission Form States
-  const [newAuthor, setNewAuthor] = useState("");
-  const [newRating, setNewRating] = useState(5);
-  const [newText, setNewText] = useState("");
-  const [reviewList, setReviewList] = useState(INITIAL_PRODUCT.reviews);
+  const [reviewList] = useState(INITIAL_PRODUCT.reviews);
 
   // Math Metrics Computation Engine
   const totalReviews = reviewList.length;
   const averageRating = (
     reviewList.reduce((sum, r) => sum + r.rating, 0) / totalReviews
   ).toFixed(1);
-
-  const handleAddReview = (e) => {
-    e.preventDefault();
-    if (!newAuthor || !newText) {
-      alert("Please fill out your name and review text.");
-      return;
-    }
-
-    const addedReview = {
-      id: Date.now(),
-      author: newAuthor,
-      rating: Number(newRating),
-      date: new Date().toISOString().split("T")[0],
-      text: newText,
-    };
-
-    setReviewList([addedReview, ...reviewList]);
-    setNewAuthor("");
-    setNewText("");
-    setNewRating(5);
-  };
 
   useEffect(() => {
     if (!productId) return;
@@ -107,7 +65,6 @@ export default function ProductDetailsPage() {
         });
 
         if (response.data.success) {
-          console.log(response.data.data);
           setProduct(response.data.data);
           setSelectedImage(response.data.data.gallery[0]);
         }
@@ -126,8 +83,44 @@ export default function ProductDetailsPage() {
     };
   }, [productId]);
 
-  console.log(productId, "productId");
-  console.log(selectedImage, "selected Image");
+  useEffect(() => {
+    if (!product?.categoryId) return;
+
+    const controller = new AbortController();
+
+    async function fetchProductByCategoryId() {
+      try {
+        setLoading(true);
+        const response = await api.get(
+          `/products?categoryId=${product?.categoryId}&limit=3`,
+          {
+            signal: controller.signal,
+          },
+        );
+
+        if (response.data.success) {
+          setRelatedProducts(
+            response.data.data.content.filter((p) => p.id != productId),
+          );
+        }
+      } catch (err) {
+        if (err.name !== "CanceledError") {
+          toast.error("Could not retrieve product details.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProductByCategoryId();
+
+    return () => {
+      controller.abort();
+    };
+  }, [product, productId]);
+
+  useEffect(() => {
+    window.scrollTo(SCROLL_TOP_BEHAVIOR);
+  }, [productId]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans antialiased pb-16">
@@ -220,133 +213,175 @@ export default function ProductDetailsPage() {
             </div>
           </div>
         </div>
-
-        {/* BOTTOM LAYER: SPECIFICATIONS VS USER REVIEW COMPARTMENT TAB TRAY */}
         <div className="mt-12 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-xs">
-          {/* Tab Selector Headers */}
-          <div className="flex border-b border-gray-200 bg-gray-50">
+          {/* Static Header with Modern Badge */}
+          <div className="border-b border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-between">
+            <h2 className="text-xs font-black uppercase tracking-wider text-gray-700 flex items-center gap-2">
+              <span>User Reviews</span>
+              <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full text-[10px] font-black border border-blue-100">
+                {totalReviews}
+              </span>
+            </h2>
+            <span className="text-[10px] text-gray-400 font-medium">
+              Verified Purchases Only
+            </span>
+          </div>
+
+          {/* Active Reviews Feed Section */}
+          <div className="p-6 lg:p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              <div className="lg:col-span-12">
+                {/* 🌟 CONDITION A: BLANK SLATE FALLBACK (If no reviews exist) */}
+                {reviewList.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1}
+                      stroke="currentColor"
+                      className="w-10 h-10 text-gray-300 mb-2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z"
+                      />
+                    </svg>
+                    <p className="text-xs font-bold text-gray-500">
+                      No feedback submitted yet
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      Be the first to share your experience once your order
+                      arrives.
+                    </p>
+                  </div>
+                ) : (
+                  /* 🌟 CONDITION B: STREAMING ACTIVE FEED LIST */
+                  <div className="divide-y divide-gray-100 space-y-6">
+                    {reviewList.map((rev) => {
+                      // Quick logic helper to generate automated UI profile circular badges
+                      const initials = rev.author
+                        ? rev.author
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .slice(0, 2)
+                        : "??";
+
+                      return (
+                        <div
+                          key={rev.id}
+                          className="pt-6 first:pt-0 flex items-start gap-4"
+                        >
+                          {/* Dynamic Circular Visual Avatar Badge Element */}
+                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 text-white flex items-center justify-center font-bold tracking-wider text-[10px] shadow-2xs">
+                            {initials}
+                          </div>
+
+                          {/* Main Data Content Block */}
+                          <div className="flex-grow text-sm space-y-1">
+                            <div className="flex justify-between items-baseline">
+                              <p className="font-black text-gray-900 capitalize text-xs tracking-tight">
+                                {rev.author}
+                              </p>
+                              <span className="text-[10px] text-gray-400 font-medium">
+                                {rev.date}
+                              </span>
+                            </div>
+
+                            {/* Star Rating Render Track */}
+                            <div className="text-amber-400 text-[10px] tracking-tight">
+                              {"★".repeat(rev.rating)}
+                              <span className="text-gray-200">
+                                {"★".repeat(5 - rev.rating)}
+                              </span>
+                            </div>
+
+                            <p className="text-gray-600 font-medium text-xs leading-relaxed pt-0.5">
+                              {rev.text}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* 🚀 NEW UP-SELL FEATURE: DYNAMIC PRODUCT SUGGESTIONS */}
+        <div className="mt-12 space-y-5">
+          {/* Header Section Title */}
+          <div className="flex items-center justify-between px-1">
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-wider text-gray-900">
+                You May Also Like
+              </h3>
+              <p className="text-[11px] text-gray-400">
+                Handpicked additions selected to match your current marketplace
+                search preferences.
+              </p>
+            </div>
+
             <button
-              onClick={() => setActiveTab("specs")}
-              className={`px-6 py-4 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === "specs" ? "bg-white text-blue-600 border-blue-600" : "text-gray-500 border-transparent hover:text-gray-900"}`}
+              onClick={() => navigate(PATHS.SEARCH_RESULTS)}
+              className="text-[11px] font-black text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-wider"
             >
-              Technical Specifications
-            </button>
-            <button
-              onClick={() => setActiveTab("reviews")}
-              className={`px-6 py-4 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === "reviews" ? "bg-white text-blue-600 border-blue-600" : "text-gray-500 border-transparent hover:text-gray-900"}`}
-            >
-              User Reviews ({totalReviews})
+              View Catalog &rarr;
             </button>
           </div>
 
-          {/* Tab Payload Displays */}
-          <div className="p-6 lg:p-8">
-            {/* TAB: SPECS MODULE */}
-            {activeTab === "specs" && (
-              <ul className="space-y-3">
-                {INITIAL_PRODUCT.specs.map((spec, i) => (
-                  <li
-                    key={i}
-                    className="flex gap-4 text-sm items-center py-2 border-b border-gray-50 last:border-0"
-                  >
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600/20 text-blue-600 flex items-center justify-center font-bold text-[8px]">
-                      ✓
-                    </span>
-                    <span className="text-gray-700 font-medium">{spec}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {/* Mock Array loop placeholder tracking recommendations — replace 'suggestionsList' with active backend context properties later! */}
+            {relatedProducts?.map((product) => (
+              <div
+                key={product.id}
+                onClick={() =>
+                  navigate(PATHS.PRODUCT_DETAILS + `?id=${product.id}`)
+                }
+                className="group bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:border-gray-300 transition-all cursor-pointer flex flex-col h-full"
+              >
+                {/* Card Image Thumbnail Section Wrapper */}
+                <div className="relative aspect-square w-full bg-gray-50 overflow-hidden border-b border-gray-100">
+                  <img
+                    src={product.mainImage}
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-out"
+                  />
 
-            {/* TAB: REVIEWS ENGINE */}
-            {activeTab === "reviews" && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                {/* Left Side: Submit New Review (5 Columns) */}
-                <div className="lg:col-span-5 bg-gray-50 p-5 rounded-xl border border-gray-200 space-y-4">
-                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
-                    Write a Customer Review
-                  </h3>
-
-                  <form onSubmit={handleAddReview} className="space-y-3.5">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-600 mb-1">
-                        Your Name
-                      </label>
-                      <input
-                        type="text"
-                        value={newAuthor}
-                        onChange={(e) => setNewAuthor(e.target.value)}
-                        className="w-full text-sm bg-white border border-gray-300 rounded-lg p-2 focus:border-blue-500 focus:outline-none"
-                        placeholder="e.g., Eko Wijaya"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-gray-600 mb-1">
-                        Rating
-                      </label>
-                      <select
-                        value={newRating}
-                        onChange={(e) => setNewRating(e.target.value)}
-                        className="w-full text-sm bg-white border border-gray-300 rounded-lg p-2 focus:border-blue-500 focus:outline-none"
+                  {product.badge !== "NONE" && (
+                    <div className="absolute top-2 left-2 z-10">
+                      <span
+                        className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 border rounded-md shadow-2xs backdrop-blur-xs ${BADGE_COLORS[product.badge]}
+              `}
                       >
-                        <option value="5">★★★★★ (5 Stars)</option>
-                        <option value="4">★★★★☆ (4 Stars)</option>
-                        <option value="3">★★★☆☆ (3 Stars)</option>
-                        <option value="2">★★☆☆☆ (2 Stars)</option>
-                        <option value="1">★☆☆☆☆ (1 Star)</option>
-                      </select>
+                        {product.badge.replace("_", " ")}
+                      </span>
                     </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-gray-600 mb-1">
-                        Review Description
-                      </label>
-                      <textarea
-                        rows="3"
-                        value={newText}
-                        onChange={(e) => setNewText(e.target.value)}
-                        className="w-full text-sm bg-white border border-gray-300 rounded-lg p-2 focus:border-blue-500 focus:outline-none"
-                        placeholder="Share your experience working with this gear..."
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full bg-gray-900 text-white font-bold text-xs uppercase tracking-wider py-2.5 rounded-lg hover:bg-blue-600 transition-colors"
-                    >
-                      Post Review
-                    </button>
-                  </form>
+                  )}
                 </div>
 
-                {/* Right Side: Active Feed Stream (7 Columns) */}
-                <div className="lg:col-span-7 divide-y divide-gray-100 space-y-6">
-                  {reviewList.map((rev) => (
-                    <div
-                      key={rev.id}
-                      className="pt-6 first:pt-0 text-sm space-y-1.5"
-                    >
-                      <div className="flex justify-between items-center">
-                        <p className="font-bold text-gray-900 capitalize">
-                          {rev.author}
-                        </p>
-                        <span className="text-xs text-gray-400 font-medium">
-                          {rev.date}
-                        </span>
-                      </div>
-                      <div className="text-amber-400 text-xs">
-                        {"★".repeat(rev.rating)}
-                        {"☆".repeat(5 - rev.rating)}
-                      </div>
-                      <p className="text-gray-600 font-light leading-relaxed">
-                        {rev.text}
-                      </p>
-                    </div>
-                  ))}
+                <div className="p-3.5 flex flex-col flex-grow justify-between space-y-2">
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-800 group-hover:text-blue-600 line-clamp-2 transition-colors min-h-[32px] leading-tight tracking-tight">
+                      {product.name}
+                    </h4>
+                  </div>
+
+                  <div className="pt-1 flex items-baseline justify-between">
+                    <span className="text-xs font-black text-gray-900 font-mono">
+                      Rp {product.price.toLocaleString("id-ID")}
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-medium scale-95 group-hover:scale-100 group-hover:text-blue-500 origin-right transition-all">
+                      Details &rarr;
+                    </span>
+                  </div>
                 </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
       </main>

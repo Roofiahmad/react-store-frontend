@@ -53,15 +53,13 @@ export default function Login() {
       });
 
       toast.success("Account verified successfully! Redirecting to homepage.");
-
-      console.log(user);
       if (user.role == USER) {
         navigate(PATHS.HOME);
       } else {
         navigate(PATHS.ADMIN_HOME);
       }
     } catch (error) {
-      console.log(error.response.data);
+      toast.error(error.response.data.message);
     } finally {
       setIsLoading(false);
     }
@@ -122,23 +120,6 @@ export default function Login() {
                 </div>
               </>
             ))}
-
-            <div className="flex items-center justify-between pt-1">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <label
-                  htmlFor="remember-me"
-                  className="ml-2 block text-xs font-medium text-gray-600 select-none"
-                >
-                  Keep me signed in
-                </label>
-              </div>
-            </div>
 
             <div className="pt-2">
               <Button

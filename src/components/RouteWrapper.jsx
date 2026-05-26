@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { ADMIN, PATHS, USER } from "../constants";
 import ProtectedRoute from "./ProtectedRoute"; //
 import { useShop } from "../context/ShopContext";
+import RootLayout from "./RootLayout";
 
 const HomePage = lazy(() => import("../pages/HomePage"));
 const LoginPage = lazy(() => import("../pages/LoginPage"));
@@ -20,26 +21,36 @@ const NotFound = lazy(() => import("../pages/NotFoundPage"));
 
 const createRoutes = (currentUser) => [
   { path: PATHS.LOGIN, element: <LoginPage /> },
-  { path: PATHS.HOME, element: <HomePage /> },
   { path: PATHS.REGISTER, element: <RegisterPage /> },
-  { path: PATHS.PRODUCT_DETAILS, element: <ProductDetailsPage /> },
-  { path: PATHS.CART, element: <CartPage /> },
-  { path: PATHS.SEARCH_RESULTS, element: <SearchResults /> },
 
   {
-    element: <ProtectedRoute allowedRoles={[USER]} user={currentUser} />,
+    path: "/",
+    element: <RootLayout />,
     children: [
-      { path: PATHS.CHECKOUT, element: <CheckoutPage /> },
-      { path: PATHS.PROFILE, element: <ProfilePage /> },
-      { path: PATHS.ORDER_DETAILS, element: <OrderDetailsPage /> },
-    ],
-  },
+      // PUBLIC ROUTE
+      { path: PATHS.HOME, element: <HomePage /> },
+      { path: PATHS.PRODUCT_DETAILS, element: <ProductDetailsPage /> },
+      { path: PATHS.CART, element: <CartPage /> },
+      { path: PATHS.SEARCH_RESULTS, element: <SearchResults /> },
 
-  {
-    element: <ProtectedRoute allowedRoles={[ADMIN]} user={currentUser} />,
-    children: [
-      { path: PATHS.ADMIN_HOME, element: <AdminHome /> },
-      { path: PATHS.ADMIN_CREATE_PRODUCT, element: <AdminCreateProduct /> },
+      // 🔐 PROTECTED USER ROUTE
+      {
+        element: <ProtectedRoute allowedRoles={[USER]} user={currentUser} />,
+        children: [
+          { path: PATHS.CHECKOUT, element: <CheckoutPage /> },
+          { path: PATHS.PROFILE, element: <ProfilePage /> },
+          { path: PATHS.ORDER_DETAILS, element: <OrderDetailsPage /> },
+        ],
+      },
+
+      // 🔐 PROTECTED ADMIN ROUTE
+      {
+        element: <ProtectedRoute allowedRoles={[ADMIN]} user={currentUser} />,
+        children: [
+          { path: PATHS.ADMIN_HOME, element: <AdminHome /> },
+          { path: PATHS.ADMIN_CREATE_PRODUCT, element: <AdminCreateProduct /> },
+        ],
+      },
     ],
   },
 

@@ -24,7 +24,6 @@ api.interceptors.response.use(
   async (error) => {
     if (!axios.isCancel(error)) {
       const originalRequest = error.config;
-      console.log(originalRequest, "originalRequest");
 
       if (
         error?.response?.status === 401 &&

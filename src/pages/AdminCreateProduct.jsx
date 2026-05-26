@@ -68,7 +68,6 @@ export default function AdminCreateProduct() {
   };
 
   const onSubmit = (data) => {
-    console.log(data);
     if (data.uploadedImages.length === 0) {
       toast.warn("Please upload at least one image asset.");
       return;
@@ -97,8 +96,7 @@ export default function AdminCreateProduct() {
         }
       })
       .catch((err) => {
-        console.log(err);
-        toast.error("Failed to commit product.");
+        toast.error(`Failed to commit product: ${err.response.message}`);
       })
       .finally(() => setLoading(false));
   };

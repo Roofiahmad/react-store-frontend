@@ -42,3 +42,38 @@ export const BADGE_COLORS = {
   [BADGE_SALE]: "!bg-rose-100 text-rose-800 border-rose-200",
   [BADGE_LIMITED]: "!bg-purple-100 text-purple-800 border-purple-200",
 };
+
+export const ALL_CATEGORY = "All";
+
+export const SORT_BY = [
+  {
+    label: "Created: Newest to Oldest",
+    value: "LATEST",
+  },
+  {
+    label: "Created: Oldest to Newest",
+    value: "OLDEST",
+  },
+  {
+    label: "Price: Low to High",
+    value: "PRICE_LOW_TO_HIGH",
+  },
+  {
+    label: "Price: High to Low",
+    value: "PRICE_HIGH_TO_LOW",
+  },
+  {
+    label: "Stock: High to Low",
+    value: "HIGHEST_STOCK",
+  },
+  {
+    label: "Stock: Low to High",
+    value: "LOWEST_STOCK",
+  },
+];
+
+export const SCROLL_TOP_BEHAVIOR = {
+  top: 0,
+  left: 0,
+  behavior: "smooth",
+};
