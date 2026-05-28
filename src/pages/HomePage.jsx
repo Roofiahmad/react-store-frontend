@@ -23,8 +23,13 @@ export default function Home() {
       : products?.filter((p) => p.categoryName === selectedCategory);
 
   const handleAddToCart = (item) => {
-    if (user?.role == ADMIN) return alert("admin can't add to cart !!!");
+    if (!user) {
+      toast.error("You need to login first to add to cart");
+      return navigate(PATHS.LOGIN);
+    }
+    if (user?.role == ADMIN) return toast.error("Admin can't add to cart !!!");
     addToCart(item);
+    toast.success("Item added into cart successfully");
   };
 
   useEffect(() => {

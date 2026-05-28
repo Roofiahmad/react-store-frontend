@@ -95,14 +95,12 @@ export function ShopProvider({ children }) {
     }
   };
 
-  const clearCart = async (controller) => {
+  const clearCart = async (successCb) => {
     try {
-      const response = await api.delete(`/carts/${cartId}/items`, {
-        signal: controller ? controller.signal : null,
-      });
-
+      const response = await api.delete(`/carts/${cartId}/items`, {});
       if (response.data.success) {
         setCart([]);
+        successCb && successCb();
       }
     } catch (err) {
       if (err.name !== "CanceledError") {

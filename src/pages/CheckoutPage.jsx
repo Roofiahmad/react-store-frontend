@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { PATHS, PPN_PERCENTAGE } from "../constants";
@@ -7,6 +7,7 @@ import api from "../lib/api";
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
+  const cartPollingInterval = useRef();
 
   const [cart, setCart] = useState(null);
   const [savedAddresses, setSavedAddresses] = useState([]);
@@ -103,10 +104,24 @@ export default function CheckoutPage() {
 
     fetchUserProfile();
     fetchUserAddresses();
-    fetchUserCart();
 
-    return () => controller.abort();
-  }, []);
+    cartPollingInterval.current = setInterval(() => {
+      fetchUserCart();
+    }, 1000);
+
+    return () => {
+      controller.abort();
+      clearInterval(cartPollingInterval.current);
+      cartPollingInterval.current = null;
+    };
+  }, [cartPollingInterval]);
+
+  useEffect(() => {
+    if (cart) {
+      clearInterval(cartPollingInterval.current);
+      cartPollingInterval.current = null;
+    }
+  }, [cart]);
 
   // 4. STRIPE SESSION DISPATCH PIPELINE
   const onSubmitOrder = async (contactData) => {

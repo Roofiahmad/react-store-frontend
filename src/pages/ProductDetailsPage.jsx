@@ -5,6 +5,7 @@ import { LoadingSpinner } from "../components/LoadingSpinner";
 import { toast } from "react-toastify";
 import api from "../lib/api";
 import { BADGE_COLORS, PATHS, SCROLL_TOP_BEHAVIOR } from "../constants";
+import { useShop } from "../context/ShopContext";
 
 const INITIAL_PRODUCT = {
   reviews: [
@@ -36,13 +37,12 @@ export default function ProductDetailsPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const productId = searchParams.get("id");
+  const { user, addToCart, clearCart } = useShop();
 
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [isLoading, setLoading] = useState(false);
-
   const [selectedImage, setSelectedImage] = useState(null);
-  const [, setCartCount] = useState(0);
 
   const [reviewList] = useState(INITIAL_PRODUCT.reviews);
 
@@ -197,15 +197,26 @@ export default function ProductDetailsPage() {
             <div className="pt-6 border-t border-gray-100 mt-6 flex flex-wrap gap-4">
               <button
                 onClick={() => {
-                  setCartCount((c) => c + 1);
-                  alert("Item logged into cart instance.");
+                  if (!user) {
+                    toast.error("You need to login first to add to cart");
+                    return navigate(PATHS.LOGIN);
+                  }
+                  addToCart(product);
+                  toast.success("Item added into cart successfully");
                 }}
                 className="flex-grow sm:flex-none bg-blue-600 text-white font-bold px-8 py-3.5 rounded-xl text-sm hover:bg-blue-700 transition-colors shadow-xs"
               >
                 Add To Shopping Bag
               </button>
               <button
-                onClick={() => navigate("/checkout")}
+                disabled={!user}
+                onClick={() => {
+                  clearCart();
+                  setTimeout(() => {
+                    addToCart(product);
+                  }, 500);
+                  navigate(PATHS.CHECKOUT);
+                }}
                 className="flex-grow sm:flex-none border border-gray-300 text-gray-700 font-bold px-8 py-3.5 rounded-xl text-sm hover:bg-gray-50 transition-colors"
               >
                 Instant Checkout
