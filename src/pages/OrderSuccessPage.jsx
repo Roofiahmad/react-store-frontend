@@ -3,8 +3,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { PATHS } from "../constants";
 import { toast } from "react-toastify";
-import api from "../lib/api";
+import api, { setAuthToken } from "../lib/api";
 import { LoadingSpinner } from "../components/LoadingSpinner";
+import { format, parseISO } from "date-fns";
 
 export default function OrderSuccessPage() {
   const navigate = useNavigate();
@@ -16,6 +17,9 @@ export default function OrderSuccessPage() {
   const [orderDetails, setOrderDetails] = useState(null);
 
   useEffect(() => {
+    const token = sessionStorage.getItem("shop_token");
+    setAuthToken(token);
+
     const controller = new AbortController();
     async function getOrderDetails() {
       try {
@@ -82,7 +86,7 @@ export default function OrderSuccessPage() {
             Payment Authorized Successfully
           </p>
           <h1 className="text-2xl font-black tracking-tight text-gray-900 sm:text-3xl">
-            Thank you for your order, bro!
+            Thank you for your order!
           </h1>
           <p className="text-xs text-gray-500 max-w-sm mx-auto leading-relaxed">
             Your transaction has cleared Stripe secure processing nodes. A
@@ -97,10 +101,10 @@ export default function OrderSuccessPage() {
           <div className="flex justify-between items-center border-b border-gray-100 pb-4 text-xs">
             <div className="space-y-0.5">
               <p className="font-bold text-gray-400 uppercase tracking-wider text-[10px]">
-                Reference Voucher ID
+                Reference Order ID
               </p>
               <p className="font-mono font-black text-gray-900 text-sm">
-                #{orderDetails?.invoiceCode || "NEX-948271A"}
+                #ORD-{orderDetails?.id}
               </p>
             </div>
             <div className="text-right space-y-0.5">
@@ -108,8 +112,10 @@ export default function OrderSuccessPage() {
                 Logistics Date
               </p>
               <p className="font-bold text-gray-700">
-                {orderDetails?.createdAt ||
-                  new Date().toLocaleDateString("id-ID")}
+                {format(
+                  parseISO(orderDetails?.createdAt),
+                  "MM/dd/yyyy, HH:mm:ss",
+                )}
               </p>
             </div>
           </div>
@@ -117,7 +123,7 @@ export default function OrderSuccessPage() {
           {/* Purchased Line Items Core List Mapping */}
           <div className="space-y-4">
             <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-wider">
-              Manifest Composition
+              Products
             </h3>
             <div className="divide-y divide-gray-100 max-h-48 overflow-y-auto pr-1">
               {orderDetails?.items?.map((item) => (
@@ -131,11 +137,11 @@ export default function OrderSuccessPage() {
                     </p>
                     <p className="text-gray-400 font-medium font-mono">
                       Qty: {item.quantity} &times; Rp{" "}
-                      {item?.price.toLocaleString("id-ID")}
+                      {item?.price?.toLocaleString("id-ID")}
                     </p>
                   </div>
                   <span className="font-extrabold text-gray-900 font-mono">
-                    Rp {(item.price * item.quantity).toLocaleString("id-ID")}
+                    Rp {item.totalPrice?.toLocaleString("id-ID")}
                   </span>
                 </div>
               ))}
@@ -145,20 +151,18 @@ export default function OrderSuccessPage() {
           {/* Dispatch Destination Cards Meta Details */}
           <div className="border-t border-gray-100 pt-4 space-y-1 text-xs">
             <h4 className="font-black text-gray-400 uppercase tracking-wider text-[10px] mb-1">
-              Distribution Shipping Destination
+              Shipping Destination
             </h4>
             <p className="font-bold text-gray-900 capitalize">
-              {orderDetails?.shippingAddress?.label ||
-                "Primary Workspace Office"}
+              {orderDetails?.shippingAddress?.label}
             </p>
             <p className="text-gray-600 font-medium leading-relaxed">
-              {orderDetails?.shippingAddress?.streetAddress ||
-                "Jl. Jenderal Sudirman No. 21, Central Jakarta"}
+              {orderDetails?.shippingAddress?.street}
             </p>
             <p className="text-gray-400 text-[11px]">
               {orderDetails?.shippingAddress?.city},{" "}
-              {orderDetails?.shippingAddress?.province} •{" "}
-              {orderDetails?.shippingAddress?.postalCode}
+              {orderDetails?.shippingAddress?.state} •{" "}
+              {orderDetails?.shippingAddress?.zip}
             </p>
           </div>
 
@@ -167,15 +171,19 @@ export default function OrderSuccessPage() {
             <div className="flex justify-between">
               <span>Logistics Carrier Fee</span>
               <span className="font-bold text-gray-900 font-mono">
-                Rp{" "}
-                {(orderDetails?.shippingFee || 25000).toLocaleString("id-ID")}
+                Rp {orderDetails?.shippingFee?.toLocaleString("id-ID")}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>VAT Fee</span>
+              <span className="font-bold text-gray-900 font-mono">
+                Rp {orderDetails?.vatAmount?.toLocaleString("id-ID")}
               </span>
             </div>
             <div className="flex justify-between border-t border-gray-100 pt-3 text-sm font-black text-gray-900">
               <span>Settled Settlement Total</span>
               <span className="text-blue-600 font-mono text-base">
-                Rp{" "}
-                {(orderDetails?.finalTotal || 175000).toLocaleString("id-ID")}
+                Rp {orderDetails?.totalPrice?.toLocaleString("id-ID")}
               </span>
             </div>
           </div>
