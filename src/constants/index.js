@@ -2,13 +2,16 @@ export const PATHS = {
   // Public / Customer Paths
   LOGIN: "/login",
   REGISTER: "/register",
-  HOME: "/home",
+  HOME: "/",
   PRODUCT_DETAILS: "/product-details",
   SEARCH_RESULTS: "/search-results",
+
+  // User Route
   CART: "/cart",
   CHECKOUT: "/checkout",
   PROFILE: "/profile",
   ORDER_DETAILS: "/order-details",
+  ORDER_SUCCESS: "/order-success",
 
   // Admin Paths
   ADMIN_HOME: "/admin-home",

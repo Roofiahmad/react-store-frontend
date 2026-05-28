@@ -1,10 +1,11 @@
-import { lazy } from "react";
+import { lazy, Suspense } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import { ADMIN, PATHS, USER } from "../constants";
-import ProtectedRoute from "./ProtectedRoute"; //
+import ProtectedRoute from "./ProtectedRoute";
 import { useShop } from "../context/ShopContext";
 import RootLayout from "./RootLayout";
+import OrderSuccessPage from "../pages/OrderSuccessPage";
 
 const HomePage = lazy(() => import("../pages/HomePage"));
 const LoginPage = lazy(() => import("../pages/LoginPage"));
@@ -27,23 +28,24 @@ const createRoutes = (currentUser) => [
     path: "/",
     element: <RootLayout />,
     children: [
-      // PUBLIC ROUTE
+      // PUBLIC ROUTES
       { path: PATHS.HOME, element: <HomePage /> },
       { path: PATHS.PRODUCT_DETAILS, element: <ProductDetailsPage /> },
       { path: PATHS.CART, element: <CartPage /> },
       { path: PATHS.SEARCH_RESULTS, element: <SearchResults /> },
 
-      // 🔐 PROTECTED USER ROUTE
+      // 🔐 PROTECTED USER ROUTES
       {
         element: <ProtectedRoute allowedRoles={[USER]} user={currentUser} />,
         children: [
           { path: PATHS.CHECKOUT, element: <CheckoutPage /> },
           { path: PATHS.PROFILE, element: <ProfilePage /> },
           { path: PATHS.ORDER_DETAILS, element: <OrderDetailsPage /> },
+          { path: PATHS.ORDER_SUCCESS, element: <OrderSuccessPage /> },
         ],
       },
 
-      // 🔐 PROTECTED ADMIN ROUTE
+      // 🔐 PROTECTED ADMIN ROUTES
       {
         element: <ProtectedRoute allowedRoles={[ADMIN]} user={currentUser} />,
         children: [
@@ -59,9 +61,22 @@ const createRoutes = (currentUser) => [
 
 const RouteWrapper = () => {
   const { user } = useShop();
-  const router = createBrowserRouter(createRoutes(user));
 
-  return <RouterProvider router={router} />;
+  const router = createBrowserRouter(createRoutes(user), {
+    basename: "/",
+  });
+
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center text-xs font-bold text-gray-400 uppercase tracking-widest animate-pulse">
+          Syncing application modules...
+        </div>
+      }
+    >
+      <RouterProvider router={router} />
+    </Suspense>
+  );
 };
 
 export default RouteWrapper;

@@ -260,7 +260,6 @@ export default function ProductDetailsPage() {
                   /* 🌟 CONDITION B: STREAMING ACTIVE FEED LIST */
                   <div className="divide-y divide-gray-100 space-y-6">
                     {reviewList.map((rev) => {
-                      // Quick logic helper to generate automated UI profile circular badges
                       const initials = rev.author
                         ? rev.author
                             .split(" ")

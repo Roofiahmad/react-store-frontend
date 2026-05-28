@@ -39,14 +39,14 @@ export default function Navbar() {
       }
     };
 
-    user.role == USER && fetchCart();
+    user?.role == USER && fetchCart();
   }, [token]);
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-xs">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 justify-between items-center">
-          <Link to="/home" className="flex items-center gap-3 select-none">
+          <Link to={PATHS.HOME} className="flex items-center gap-3 select-none">
             <span className="text-xl font-black tracking-tight text-blue-600">
               {appName}
             </span>
@@ -57,7 +57,7 @@ export default function Navbar() {
 
           <div className="flex items-center gap-5" hidden={!user}>
             <Link
-              hidden={user.role !== USER}
+              hidden={user?.role !== USER}
               to="/cart"
               className="relative cursor-pointer p-2 hover:bg-gray-100 rounded-full transition-colors border border-gray-200 flex items-center justify-center"
             >
@@ -111,7 +111,7 @@ export default function Navbar() {
                       </p>
                     </div>
                     <Link
-                      hidden={user.role !== ADMIN}
+                      hidden={user?.role !== ADMIN}
                       to={PATHS.ADMIN_HOME}
                       onClick={() => setDropdownOpen(false)}
                       className="block px-3.5 py-2 hover:bg-gray-50 hover:text-blue-600 transition-colors"
@@ -119,7 +119,7 @@ export default function Navbar() {
                       My Admin Dashboard
                     </Link>
                     <Link
-                      hidden={user.role !== USER}
+                      hidden={user?.role !== USER}
                       to={PATHS.PROFILE}
                       onClick={() => setDropdownOpen(false)}
                       className="block px-3.5 py-2 hover:bg-gray-50 hover:text-blue-600 transition-colors"
@@ -127,7 +127,7 @@ export default function Navbar() {
                       My Profile Dashboard
                     </Link>
                     <Link
-                      hidden={user.role !== USER}
+                      hidden={user?.role !== USER}
                       to="/cart"
                       onClick={() => setDropdownOpen(false)}
                       className="block px-3.5 py-2 hover:bg-gray-50 transition-colors"

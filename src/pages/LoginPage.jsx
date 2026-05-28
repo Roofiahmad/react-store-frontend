@@ -47,13 +47,13 @@ export default function Login() {
         user: {
           name: user.name,
           email: user.email,
-          role: user.role,
+          role: user?.role,
         },
         token: accessToken,
       });
 
       toast.success("Account verified successfully! Redirecting to homepage.");
-      if (user.role == USER) {
+      if (user?.role == USER) {
         navigate(PATHS.HOME);
       } else {
         navigate(PATHS.ADMIN_HOME);

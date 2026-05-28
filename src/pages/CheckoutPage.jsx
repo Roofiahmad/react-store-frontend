@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { PPN_PERCENTAGE } from "../constants";
+import { PATHS, PPN_PERCENTAGE } from "../constants";
 import { toast } from "react-toastify";
 import api from "../lib/api";
 
@@ -159,7 +159,7 @@ export default function CheckoutPage() {
         <div className="flex justify-between items-center pb-6 mb-8 border-b border-gray-200">
           <div
             className="flex items-center gap-2 cursor-pointer"
-            onClick={() => navigate("/home")}
+            onClick={() => navigate(PATHS.HOME)}
           >
             <span className="text-xl font-black tracking-tight text-blue-600">
               RADSHOP

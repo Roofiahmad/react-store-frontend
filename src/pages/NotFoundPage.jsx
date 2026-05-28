@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { PATHS } from "../constants";
 
 export default function NotFoundPage() {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ export default function NotFoundPage() {
 
           <button
             type="button"
-            onClick={() => navigate("/home")}
+            onClick={() => navigate(PATHS.HOME)}
             className="w-full sm:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl transition-colors shadow-xs"
           >
             Store Home

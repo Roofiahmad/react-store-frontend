@@ -23,7 +23,7 @@ export default function Home() {
       : products?.filter((p) => p.categoryName === selectedCategory);
 
   const handleAddToCart = (item) => {
-    if (user.role == ADMIN) return alert("admin can't add to cart !!!");
+    if (user?.role == ADMIN) return alert("admin can't add to cart !!!");
     addToCart(item);
   };
 
