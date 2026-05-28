@@ -16,7 +16,7 @@ export const PATHS = {
 };
 
 export const PPN_PERCENTAGE = 0.11;
-export const SHIPPING_FEE = 35;
+export const SHIPPING_FEE = 45000;
 
 export const USER = "USER";
 export const ADMIN = "ADMIN";

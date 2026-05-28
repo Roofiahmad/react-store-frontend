@@ -1,368 +1,430 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useShop } from "../context/ShopContext";
-import { PPN_PERCENTAGE, SHIPPING_FEE } from "../constants";
+import { useForm } from "react-hook-form";
+import { PPN_PERCENTAGE } from "../constants";
+import { toast } from "react-toastify";
+import api from "../lib/api";
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { cart } = useShop();
 
-  // Contact/Shipping Form Fields
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    address: "",
-    city: "",
-    postalCode: "",
-    cardName: "",
-    cardNumber: "",
-    cardExpiry: "",
-    cardCvc: "",
+  const [cart, setCart] = useState(null);
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState(null);
+  const [isAddressLoading, setIsAddressLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValues,
+  } = useForm({
+    defaultValues: {
+      fullName: "",
+      phoneNumber: "",
+      email: "",
+    },
   });
 
-  const [paymentMethod, setPaymentMethod] = useState("card");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  useEffect(() => {
+    const controller = new AbortController();
+    async function fetchUserAddresses() {
+      try {
+        setIsAddressLoading(true);
+        const response = await api.get("/address", {
+          signal: controller.signal,
+        });
 
-  // Computations
-  const subtotal = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  );
-  const taxAdjustment = Math.round(subtotal * PPN_PERCENTAGE);
-  const finalTotal = subtotal + SHIPPING_FEE + taxAdjustment;
+        if (response.data.success) {
+          const addressList = response.data.data || [];
+          setSavedAddresses(addressList);
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+          const defaultAddress =
+            addressList.find((a) => a.isPrimary) || addressList[0];
+          if (defaultAddress) {
+            setSelectedAddress(defaultAddress);
+          }
+        }
+      } catch (err) {
+        if (err.name !== "CanceledError") {
+          toast.error("Failed to fetch user addresses");
+        }
+      } finally {
+        setIsAddressLoading(false);
+      }
+    }
 
-  const handleProcessOrder = (e) => {
-    e.preventDefault();
-    setError("");
+    async function fetchUserCart() {
+      try {
+        setIsAddressLoading(true);
+        const response = await api.get("/carts", {
+          signal: controller.signal,
+        });
 
-    // Quick Validation Loop
-    const { firstName, email, address, city } = formData;
-    if (!firstName || !email || !address || !city) {
-      setError(
-        "Please finalize your required contact and destination shipping details.",
-      );
+        if (response.data.success) {
+          setCart(response.data.data);
+        }
+      } catch (err) {
+        if (err.name !== "CanceledError") {
+          toast.error("Failed to fetch user cart");
+        }
+      } finally {
+        setIsAddressLoading(false);
+      }
+    }
+
+    async function fetchUserProfile() {
+      try {
+        setIsAddressLoading(true);
+        const response = await api.get("/profile", {
+          signal: controller.signal,
+        });
+
+        if (response.data.success) {
+          const { name: fullName, email, phoneNumber } = response.data.data;
+          setValues(
+            {
+              fullName,
+              phoneNumber,
+              email,
+            },
+            { shouldValidate: true },
+          );
+        }
+      } catch (err) {
+        if (err.name !== "CanceledError") {
+          toast.error("Failed to fetch user profile");
+        }
+      } finally {
+        setIsAddressLoading(false);
+      }
+    }
+
+    fetchUserProfile();
+    fetchUserAddresses();
+    fetchUserCart();
+
+    return () => controller.abort();
+  }, []);
+
+  // 4. STRIPE SESSION DISPATCH PIPELINE
+  const onSubmitOrder = async (contactData) => {
+    if (!selectedAddress) {
+      toast.warn("Please select a target shipping destination card first.");
       return;
     }
 
-    setIsLoading(true);
+    if (cart.length === 0) {
+      toast.error("Your marketplace cart configuration is empty!");
+      return;
+    }
 
-    // Simulating safe transactions clearing backend delays
-    setTimeout(() => {
-      setIsLoading(false);
-      alert("Transaction Authorized! Thank you for purchasing from Nexus.");
-      navigate("/home");
-    }, 2000);
+    try {
+      setIsSubmitting(true);
+
+      const payload = {
+        fullName: contactData.fullName.trim(),
+        phoneNumber: contactData.phoneNumber.trim(),
+        email: contactData.email.trim(),
+        shippingAddressId: selectedAddress.id,
+        cartId: cart.id,
+      };
+
+      const response = await api.post("/checkout", payload);
+
+      if (response.data.success) {
+        console.log(response.data.data, "response.data.data");
+        const { checkoutUrl } = response.data.data;
+        toast.info(
+          "Order session registered! Handing off to Stripe Gateway...",
+        );
+        // eslint-disable-next-line react-hooks/immutability
+        window.location.href = checkoutUrl;
+      }
+    } catch (err) {
+      console.error("Gateway Session Handshake Failure:", err);
+      toast.error(
+        "Failed to initialize transaction pipeline securely with Stripe.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans antialiased py-10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Navigation Return Header */}
+        {/* Navigation Return Header Layout */}
         <div className="flex justify-between items-center pb-6 mb-8 border-b border-gray-200">
           <div
             className="flex items-center gap-2 cursor-pointer"
             onClick={() => navigate("/home")}
           >
             <span className="text-xl font-black tracking-tight text-blue-600">
-              NEXUS
+              RADSHOP
             </span>
-            <span className="text-xs font-semibold text-gray-500">
-              | Secure Checkout
+            <span className="text-xs font-bold text-gray-400">
+              | Secure Gateway Encryption
             </span>
           </div>
           <button
-            onClick={() => navigate("/home")}
+            type="button"
+            onClick={() => navigate("/cart")}
             className="text-xs font-bold text-gray-600 hover:text-blue-600 flex items-center gap-1 transition-colors"
           >
-            ← Return to shopping
+            &larr; Return to checkout cart
           </button>
         </div>
 
         {/* Global Split Framework Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* LEFT SIDE: INPUT FORMS (8 Columns) */}
+          {/* LEFT PANEL COLUMN LAYOUT FORMS */}
           <form
-            onSubmit={handleProcessOrder}
+            onSubmit={handleSubmit(onSubmitOrder)}
             className="lg:col-span-7 xl:col-span-8 space-y-6"
           >
-            {error && (
-              <div className="p-4 bg-red-50 text-red-700 text-xs font-bold border border-red-200 rounded-xl">
-                {error}
-              </div>
-            )}
-
-            {/* Step 1: Shipping Addresses */}
-            <div className="bg-white p-6 border border-gray-200 rounded-xl shadow-xs space-y-4">
-              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[11px]">
+            {/* STEP 1: CONTACT DATA */}
+            <div className="bg-white p-6 border border-gray-200 rounded-2xl shadow-xs space-y-4">
+              <h2 className="text-base font-black text-gray-900 flex items-center gap-2 uppercase tracking-wide">
+                <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px]">
                   1
                 </span>
-                Shipping Destination
+                Contact Identity
               </h2>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                {/* 👤 Full Name Field */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">
-                    First Name *
+                  <label className="block font-bold text-gray-600 mb-1">
+                    Full Name *
                   </label>
                   <input
                     type="text"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:border-blue-500 focus:outline-none"
-                    placeholder="John"
+                    {...register("fullName", {
+                      required: "Full name is mandatory",
+                    })}
+                    className={`w-full text-sm border rounded-lg p-2.5 bg-white focus:outline-none ${errors.fullName ? "border-red-500 focus:border-red-500" : "border-gray-300 focus:border-blue-500"}`}
+                    placeholder="Eko Wijaya"
                   />
+                  {errors.fullName && (
+                    <p className="text-red-500 text-[10px] mt-1 font-semibold">
+                      {errors.fullName.message}
+                    </p>
+                  )}
                 </div>
+
+                {/* 📞 Phone Number Field */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">
-                    Last Name
+                  <label className="block font-bold text-gray-600 mb-1">
+                    Phone Number *
                   </label>
                   <input
                     type="text"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:border-blue-500 focus:outline-none"
-                    placeholder="Doe"
+                    {...register("phoneNumber", {
+                      required: "Phone number is required",
+                    })}
+                    className={`w-full text-sm border rounded-lg p-2.5 bg-white focus:outline-none ${errors.phoneNumber ? "border-red-500 focus:border-red-500" : "border-gray-300 focus:border-blue-500"}`}
+                    placeholder="e.g., +628123456789"
                   />
+                  {errors.phoneNumber && (
+                    <p className="text-red-500 text-[10px] mt-1 font-semibold">
+                      {errors.phoneNumber.message}
+                    </p>
+                  )}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">
-                  Email Address *
+              <div className="text-xs">
+                <label className="block font-bold text-gray-600 mb-1">
+                  Electronic Mail Address *
                 </label>
                 <input
                   type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:border-blue-500 focus:outline-none"
-                  placeholder="john@example.com"
+                  {...register("email", {
+                    required: "Contact destination email is required",
+                  })}
+                  className={`w-full text-sm border rounded-lg p-2.5 bg-white focus:outline-none ${errors.email ? "border-red-500 focus:border-red-500" : "border-gray-300 focus:border-blue-500"}`}
+                  placeholder="eko@example.com"
                 />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">
-                  Street Address *
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  className="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:border-blue-500 focus:outline-none"
-                  placeholder="Jl. Sudirman No. 45, Apartment 12B"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">
-                    City *
-                  </label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:border-blue-500 focus:outline-none"
-                    placeholder="Jakarta Selatan"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">
-                    Postal Code
-                  </label>
-                  <input
-                    type="text"
-                    name="postalCode"
-                    value={formData.postalCode}
-                    onChange={handleInputChange}
-                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:border-blue-500 focus:outline-none"
-                    placeholder="12190"
-                  />
-                </div>
+                {errors.email && (
+                  <p className="text-red-500 text-[10px] mt-1 font-semibold">
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Step 2: Payment Selections */}
-            <div className="bg-white p-6 border border-gray-200 rounded-xl shadow-xs space-y-4">
-              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[11px]">
-                  2
-                </span>
-                Payment Mechanism
-              </h2>
-
-              {/* Toggles */}
-              <div className="grid grid-cols-2 gap-3">
-                <div
-                  onClick={() => setPaymentMethod("card")}
-                  className={`p-3 border rounded-xl flex items-center gap-2 cursor-pointer select-none transition-colors ${paymentMethod === "card" ? "border-blue-600 bg-blue-50/40 font-semibold" : "border-gray-200 hover:bg-gray-50"}`}
+            {/* STEP 2: SHIPPING DATA ASSIGNMENT */}
+            <div className="bg-white p-6 border border-gray-200 rounded-2xl shadow-xs space-y-4">
+              <div className="flex justify-between items-baseline border-b border-gray-100 pb-2">
+                <h2 className="text-base font-black text-gray-900 flex items-center gap-2 uppercase tracking-wide">
+                  <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px]">
+                    2
+                  </span>
+                  Logistics Shipping Track
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => navigate("/profile")}
+                  className="text-[11px] font-bold text-blue-600 hover:underline"
                 >
-                  <input
-                    type="radio"
-                    checked={paymentMethod === "card"}
-                    readOnly
-                    className="text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-xs">Credit/Debit Card</span>
-                </div>
-                <div
-                  onClick={() => setPaymentMethod("transfer")}
-                  className={`p-3 border rounded-xl flex items-center gap-2 cursor-pointer select-none transition-colors ${paymentMethod === "transfer" ? "border-blue-600 bg-blue-50/40 font-semibold" : "border-gray-200 hover:bg-gray-50"}`}
-                >
-                  <input
-                    type="radio"
-                    checked={paymentMethod === "transfer"}
-                    readOnly
-                    className="text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-xs">Bank VA Transfer</span>
-                </div>
+                  Configure Addresses &rarr;
+                </button>
               </div>
 
-              {/* Conditional Card Form */}
-              {paymentMethod === "card" ? (
-                <div className="pt-2 space-y-3">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">
-                      Name on Card
-                    </label>
-                    <input
-                      type="text"
-                      name="cardName"
-                      value={formData.cardName}
-                      onChange={handleInputChange}
-                      className="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:border-blue-500 focus:outline-none"
-                      placeholder="JOHN DOE"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">
-                      Card Number
-                    </label>
-                    <input
-                      type="text"
-                      name="cardNumber"
-                      value={formData.cardNumber}
-                      onChange={handleInputChange}
-                      className="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:border-blue-500 focus:outline-none"
-                      placeholder="4111 2222 3333 4444"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-600 mb-1">
-                        Expiration
-                      </label>
-                      <input
-                        type="text"
-                        name="cardExpiry"
-                        value={formData.cardExpiry}
-                        onChange={handleInputChange}
-                        className="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:border-blue-500 focus:outline-none"
-                        placeholder="MM/YY"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-600 mb-1">
-                        CVC Code
-                      </label>
-                      <input
-                        type="text"
-                        name="cardCvc"
-                        value={formData.cardCvc}
-                        onChange={handleInputChange}
-                        className="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:border-blue-500 focus:outline-none"
-                        placeholder="123"
-                      />
-                    </div>
-                  </div>
+              {isAddressLoading ? (
+                <div className="py-8 text-center text-xs text-gray-400 font-medium animate-pulse">
+                  Querying database logistics routes...
+                </div>
+              ) : savedAddresses.length === 0 ? (
+                <div className="p-6 border border-dashed border-red-200 bg-red-50/40 rounded-xl text-center space-y-3">
+                  <p className="text-xs text-red-700 font-bold">
+                    No distribution addresses verified on your profile account
+                    registry yet.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/profile")}
+                    className="bg-gray-900 text-white px-4 py-2 font-black text-[10px] uppercase tracking-wider rounded-xl hover:bg-blue-600 transition-all shadow-xs"
+                  >
+                    Setup Delivery Destination Now
+                  </button>
                 </div>
               ) : (
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-600 leading-relaxed">
-                  Upon clicking submit, a virtual account entry code will be
-                  generated via **Bank Central Asia (BCA)** or Mandiri to settle
-                  payment parameters directly.
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {savedAddresses?.map((addr) => {
+                    const isSelected = selectedAddress?.id === addr.id;
+                    return (
+                      <div
+                        key={addr.id}
+                        onClick={() => setSelectedAddress(addr)}
+                        className={`p-3.5 border text-xs rounded-xl cursor-pointer flex flex-col justify-between transition-all select-none relative group
+                          ${isSelected ? "border-blue-600 bg-blue-50/20 shadow-xs ring-1 ring-blue-600" : "border-gray-200 bg-gray-50/50 hover:bg-gray-50 hover:border-gray-300"}`}
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span
+                              className={`font-black tracking-tight uppercase text-[10px] ${isSelected ? "text-blue-700" : "text-gray-500"}`}
+                            >
+                              📍 {addr.label} {addr.isPrimary && "• (Default)"}
+                            </span>
+                            {isSelected && (
+                              <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[8px] font-black">
+                                ✓
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-gray-900 font-bold pt-1 leading-relaxed">
+                            {addr.street}
+                          </p>
+                          <p className="text-gray-400 text-[11px] font-medium">
+                            {addr.city}, {addr.state} • {addr.zip}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
+
+            {/* STEP 3: EXTERNAL STRIPE OUTSOURCE NOTIFICATION */}
+            <div className="bg-white p-6 border border-gray-200 rounded-2xl shadow-xs space-y-3">
+              <h2 className="text-base font-black text-gray-900 flex items-center gap-2 uppercase tracking-wide">
+                <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px]">
+                  3
+                </span>
+                Secure Transaction Layer
+              </h2>
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-start gap-3">
+                <span className="text-xl pt-0.5">💳</span>
+                <div className="space-y-1 text-xs leading-relaxed text-gray-600">
+                  <p className="font-bold text-gray-900">
+                    Stripe Secure Handshake Redirection
+                  </p>
+                  <p className="font-light text-gray-500">
+                    To maintain strict security configurations, clicking payment
+                    authorization redirects you out seamlessly to tokens issued
+                    by **Stripe Inc**. Raw payment digits never interact with
+                    our application system.
+                  </p>
+                </div>
+              </div>
+            </div>
           </form>
 
-          {/* RIGHT SIDE: FIXED SUMMARY PANEL (4 Columns) */}
+          {/* RIGHT SIDE PANEL: ORDER BREAKDOWN SUMMARY */}
           <div className="lg:col-span-5 xl:col-span-4 sticky top-24">
-            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-xs space-y-4">
-              <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
-                Order Composition
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
+              <h2 className="text-base font-black text-gray-900 border-b border-gray-100 pb-3 uppercase tracking-wider text-xs text-gray-500">
+                Order Items Composition
               </h2>
 
               <div className="divide-y divide-gray-100 max-h-60 overflow-y-auto pr-1">
-                {cart.map((item) => (
+                {cart?.items?.map((item) => (
                   <div
                     key={item.id}
-                    className="py-3 flex justify-between items-start gap-4 text-xs"
+                    className="py-3 flex justify-between items-start gap-4 text-xs animate-fade-in"
                   >
                     <div className="space-y-0.5">
-                      <p className="font-bold text-gray-800 line-clamp-2">
+                      <p className="font-bold text-gray-800 line-clamp-2 leading-snug">
                         {item.name}
                       </p>
-                      <p className="text-gray-400">
-                        Qty: {item.quantity} × Rp{" "}
+                      <p className="text-gray-400 font-medium font-mono">
+                        Qty: {item.quantity} &times; Rp{" "}
                         {item.price.toLocaleString("id-ID")}
                       </p>
                     </div>
-                    <span className="font-semibold text-gray-900 whitespace-nowrap">
+                    <span className="font-extrabold text-gray-900 font-mono whitespace-nowrap">
                       Rp {(item.price * item.quantity).toLocaleString("id-ID")}
                     </span>
                   </div>
                 ))}
               </div>
 
-              {/* Math Computations Breakdown */}
-              <div className="border-t border-gray-100 pt-3 space-y-2 text-xs text-gray-600">
+              {/* Math Computations Breakdowns */}
+              <div className="border-t border-gray-100 pt-3 space-y-2 text-xs text-gray-500">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span className="font-medium text-gray-900">
-                    Rp {subtotal.toLocaleString("id-ID")}
+                  <span className="font-bold text-gray-900 font-mono">
+                    Rp {cart?.subTotal.toLocaleString("id-ID")}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Logistics Carrier Fee</span>
-                  <span className="font-medium text-gray-900">
-                    Rp {SHIPPING_FEE.toLocaleString("id-ID")}
+                  <span className="font-bold text-gray-900 font-mono">
+                    Rp {cart?.shippingFee.toLocaleString("id-ID")}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>VAT Tax Framework (11%)</span>
-                  <span className="font-medium text-gray-900">
-                    Rp {taxAdjustment.toLocaleString("id-ID")}
+                  <span>VAT Tax Framework ({PPN_PERCENTAGE * 100}%)</span>
+                  <span className="font-bold text-gray-900 font-mono">
+                    Rp {cart?.vatAmount.toLocaleString("id-ID")}
                   </span>
                 </div>
-                <div className="flex justify-between border-t border-gray-100 pt-3 text-sm font-extrabold text-gray-900">
-                  <span>Grand Final Total</span>
-                  <span className="text-blue-600">
-                    Rp {finalTotal.toLocaleString("id-ID")}
+                <div className="flex justify-between border-t border-gray-100 pt-3 text-sm font-black text-gray-900">
+                  <span>Grand Total</span>
+                  <span className="text-blue-600 font-mono text-base">
+                    Rp {cart?.totalPrice.toLocaleString("id-ID")}
                   </span>
                 </div>
               </div>
 
-              {/* Secure Verification Action Hook */}
+              {/* Authorize Master Submission Action Button Trigger */}
               <div className="pt-2">
                 <button
-                  onClick={handleProcessOrder}
-                  disabled={isLoading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-sm transition-colors shadow-xs flex justify-center items-center disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  type="button"
+                  onClick={handleSubmit(onSubmitOrder)}
+                  disabled={
+                    isSubmitting ||
+                    isAddressLoading ||
+                    savedAddresses.length === 0 ||
+                    cart?.items.length === 0
+                  }
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3.5 px-4 rounded-xl text-xs uppercase tracking-widest transition-all shadow-xs flex justify-center items-center disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? (
+                  {isSubmitting ? (
                     <div className="flex items-center gap-2">
                       <svg
                         className="animate-spin h-4 w-4 text-white"
@@ -383,16 +445,16 @@ export default function CheckoutPage() {
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         />
                       </svg>
-                      <span>Clearing Security Gateway...</span>
+                      <span>Generating Stripe Gateway Link...</span>
                     </div>
                   ) : (
-                    `Authorize Payment • Rp ${finalTotal.toLocaleString("id-ID")}`
+                    `Proceed to Stripe • Rp ${cart?.totalPrice.toLocaleString("id-ID")}`
                   )}
                 </button>
               </div>
 
-              {/* Security Badge */}
-              <div className="flex items-center justify-center gap-1.5 text-[10px] text-gray-400 pt-1">
+              {/* Encryption Assurance Badges Footer Panel */}
+              <div className="flex items-center justify-center gap-1.5 text-[10px] text-gray-400 pt-1 select-none">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"

@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
-import { PATHS, PPN_PERCENTAGE, SHIPPING_FEE } from "../constants";
-import { useEffect } from "react";
+import { PATHS } from "../constants";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import api, { setAuthToken } from "../lib/api";
 
@@ -9,15 +9,11 @@ export default function CartPage() {
   const navigate = useNavigate();
   const { cart, updateCartItem, removeFromCart, token, setCart, setCartId } =
     useShop();
+  const [prices, setPrices] = useState();
 
-  const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  );
-  const shippingFee = subtotal > 0 ? SHIPPING_FEE : 0;
-  const estimatedTax = Math.round(subtotal * PPN_PERCENTAGE);
-  const grandTotal = subtotal + shippingFee + estimatedTax;
+  const totalItemsCount = useMemo(() => {
+    return cart.reduce((sum, item) => sum + item.quantity, 0);
+  }, [cart]);
 
   useEffect(() => {
     if (!token) return;
@@ -27,9 +23,16 @@ export default function CartPage() {
         const response = await api.get("/carts");
 
         if (response.data.success) {
-          const { items, id } = response.data.data;
+          const { items, id, shippingFee, subTotal, totalPrice, vatAmount } =
+            response.data.data;
           setCart(items);
           setCartId(id);
+          setPrices({
+            shippingFee,
+            subTotal,
+            vatAmount,
+            totalPrice,
+          });
         }
       } catch (err) {
         if (err.name !== "CanceledError") {
@@ -40,7 +43,7 @@ export default function CartPage() {
 
     setAuthToken(token);
     fetchCart();
-  }, [token]);
+  }, [token, totalItemsCount]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans antialiased py-10">
@@ -176,26 +179,26 @@ export default function CartPage() {
                   <div className="flex justify-between">
                     <span>Total items ({totalItemsCount} units)</span>
                     <span className="font-medium text-gray-900">
-                      Rp {subtotal.toLocaleString("id-ID")}
+                      Rp {prices?.subTotal?.toLocaleString("id-ID")}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Estimated Shipping/Handling</span>
                     <span className="font-medium text-gray-900">
-                      Rp {shippingFee.toLocaleString("id-ID")}
+                      Rp {prices?.shippingFee?.toLocaleString("id-ID")}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Value Added Tax (PPN 11%)</span>
                     <span className="font-medium text-gray-900">
-                      Rp {estimatedTax.toLocaleString("id-ID")}
+                      Rp {prices?.vatAmount?.toLocaleString("id-ID")}
                     </span>
                   </div>
 
                   <div className="border-t border-gray-100 pt-3 flex justify-between text-sm font-extrabold text-gray-900">
                     <span>Estimated Total</span>
                     <span className="text-blue-600 text-base">
-                      Rp {grandTotal.toLocaleString("id-ID")}
+                      Rp {prices?.totalPrice?.toLocaleString("id-ID")}
                     </span>
                   </div>
                 </div>
