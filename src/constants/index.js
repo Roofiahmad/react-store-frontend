@@ -12,6 +12,7 @@ export const PATHS = {
   PROFILE: "/profile",
   ORDER_DETAILS: "/order-details",
   ORDER_SUCCESS: "/order-success",
+  ORDER_CANCEL: "/order-cancel",
 
   // Admin Paths
   ADMIN_HOME: "/admin-home",

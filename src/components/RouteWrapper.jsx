@@ -6,6 +6,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import { useShop } from "../context/ShopContext";
 import RootLayout from "./RootLayout";
 import OrderSuccessPage from "../pages/OrderSuccessPage";
+import OrderCancelPage from "../pages/OrderCancelPage";
 
 const HomePage = lazy(() => import("../pages/HomePage"));
 const LoginPage = lazy(() => import("../pages/LoginPage"));
@@ -42,6 +43,7 @@ const createRoutes = (currentUser) => [
           { path: PATHS.PROFILE, element: <ProfilePage /> },
           { path: PATHS.ORDER_DETAILS, element: <OrderDetailsPage /> },
           { path: PATHS.ORDER_SUCCESS, element: <OrderSuccessPage /> },
+          { path: PATHS.ORDER_CANCEL, element: <OrderCancelPage /> },
         ],
       },
 
