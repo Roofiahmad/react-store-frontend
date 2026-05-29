@@ -8,6 +8,7 @@ import api from "../lib/api";
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const cartPollingInterval = useRef();
+  const appName = import.meta.env.VITE_APP_TITLE;
 
   const [cart, setCart] = useState(null);
   const [savedAddresses, setSavedAddresses] = useState([]);
@@ -177,7 +178,7 @@ export default function CheckoutPage() {
             onClick={() => navigate(PATHS.HOME)}
           >
             <span className="text-xl font-black tracking-tight text-blue-600">
-              RADSHOP
+              {appName}
             </span>
             <span className="text-xs font-bold text-gray-400">
               | Secure Gateway Encryption
