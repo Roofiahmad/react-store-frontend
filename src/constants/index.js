@@ -81,3 +81,27 @@ export const SCROLL_TOP_BEHAVIOR = {
   left: 0,
   behavior: "smooth",
 };
+
+export const ORDER_STATUS = {
+  PENDING: "PENDING",
+  PAID: "PAID",
+  PROCESSED: "PROCESSED",
+  SHIPPED: "SHIPPED",
+  DELIVERED: "DELIVERED",
+};
+
+export const ORDER_STEP = {
+  [ORDER_STATUS.PENDING]: 1,
+  [ORDER_STATUS.PAID]: 2,
+  [ORDER_STATUS.PROCESSED]: 3,
+  [ORDER_STATUS.SHIPPED]: 4,
+  [ORDER_STATUS.DELIVERED]: 5,
+};
+
+export const STATUS_INFO = {
+  PENDING: "Awaiting Secure Payment",
+  PAID: "Payment Verified! You're Locked In 🚀",
+  PROCESSED: "Our Team is Prepping Your Pack 📦",
+  SHIPPED: "Handed Off to Our Trusted Courier 🚚",
+  DELIVERED: "Delivered! Enjoy Your New Gear 🎉",
+};
