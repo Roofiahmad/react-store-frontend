@@ -1,7 +1,6 @@
 const ResultInformation = ({
   badgeQuery,
   totalItems,
-  searchQuery,
   setViewType,
   viewType,
 }) => {
@@ -19,10 +18,7 @@ const ResultInformation = ({
         <h1 className="text-sm text-gray-600 mt-0.5">
           Found{" "}
           <span className="font-bold text-gray-900">{totalItems} items</span>{" "}
-          matching "
-          {searchQuery ||
-            (badgeQuery === "SALE" ? "Clearance Sales" : "All Products")}
-          "
+          match
         </h1>
       </div>
 
