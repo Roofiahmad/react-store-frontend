@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { toast } from "react-toastify";
 import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { PATHS } from "../../constants";
+import { CUSTOMER_ORDER_ITEM_PER_PAGE, PATHS } from "../../constants";
 import api from "../../lib/api";
 
 const OrderHistory = () => {
@@ -11,7 +11,7 @@ const OrderHistory = () => {
   const [orderHistory, setOrderHistory] = useState([]);
 
   // 🔢 📄 PAGINATION TRACK STATES
-  const ITEMS_PER_PAGE = 3;
+
   const [currentPage, setCurrentPage] = useState(1);
 
   const fetchOrders = async (signal) => {
@@ -39,11 +39,15 @@ const OrderHistory = () => {
 
   // ✂️ CHOP CURRENT HISTORY INTO SUBSET PAGES
   const paginatedOrders = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return orderHistory.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * CUSTOMER_ORDER_ITEM_PER_PAGE;
+    return orderHistory.slice(
+      startIndex,
+      startIndex + CUSTOMER_ORDER_ITEM_PER_PAGE,
+    );
   }, [orderHistory, currentPage]);
 
-  const totalPages = Math.ceil(orderHistory.length / ITEMS_PER_PAGE) || 1;
+  const totalPages =
+    Math.ceil(orderHistory.length / CUSTOMER_ORDER_ITEM_PER_PAGE) || 1;
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4 relative">
@@ -106,7 +110,7 @@ const OrderHistory = () => {
       )}
 
       {/* 📑 USER HISTORY FOOTER PAGINATION CONTROLS PANEL */}
-      {orderHistory.length > ITEMS_PER_PAGE && (
+      {orderHistory.length > CUSTOMER_ORDER_ITEM_PER_PAGE && (
         <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-gray-500">
           <p>
             Page {currentPage} of {totalPages}

@@ -1,13 +1,13 @@
-import { useNavigate } from "react-router-dom";
-import { ALL_CATEGORY, ALL_CATEGORY_ID, PATHS } from "../../constants";
+import {
+  ADMIN_ITEMS_PER_PAGE,
+  ALL_CATEGORY,
+  ALL_CATEGORY_ID,
+} from "../../constants";
 import { useEffect, useState } from "react";
 import api from "../../lib/api";
 import { toast } from "react-toastify";
 
-const ITEMS_PER_PAGE = 8;
-
 const ProductPanel = () => {
-  const navigate = useNavigate();
   const [productPage, setProductPage] = useState(1);
   const [adminProducts, setAdminProducts] = useState([]);
   const [pageMeta, setPageMeta] = useState({
@@ -61,7 +61,7 @@ const ProductPanel = () => {
     const catId = selectedCategoryId != 0 ? selectedCategoryId : "";
     try {
       const response = await api.get(
-        `admin/products?size=${ITEMS_PER_PAGE}&page=${productPage - 1}&sort=createdAt&categoryId=${catId}`,
+        `admin/products?size=${ADMIN_ITEMS_PER_PAGE}&page=${productPage - 1}&sort=createdAt&categoryId=${catId}`,
       );
       if (response.data.success) {
         const { content, meta } = response.data.data;
@@ -188,7 +188,7 @@ const ProductPanel = () => {
                       +10 Stock
                     </button>
                     <span className="text-gray-200 font-normal">|</span>
-                    <button
+                    {/* <button
                       type="button"
                       onClick={() =>
                         navigate(`${PATHS.ADMIN_EDIT_PRODUCT}/${product.id}`)
@@ -196,7 +196,7 @@ const ProductPanel = () => {
                       className="text-amber-600 hover:underline cursor-pointer"
                     >
                       Edit
-                    </button>
+                    </button> */}
                     <span className="text-gray-200 font-normal">|</span>
                     <button
                       type="button"

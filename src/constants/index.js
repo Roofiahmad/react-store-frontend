@@ -114,3 +114,6 @@ export const ADMIN_ORDER_STATUS_INFO = {
   SHIPPED: "Dispatched with Trusted Courier 🚚",
   DELIVERED: "Delivered • Goods Received 🎉",
 };
+
+export const ADMIN_ITEMS_PER_PAGE = 5;
+export const CUSTOMER_ORDER_ITEM_PER_PAGE = 5;

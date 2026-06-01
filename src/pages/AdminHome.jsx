@@ -1,8 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { PATHS } from "../constants";
-import { INITIAL_MOCK_ORDERS } from "../mocks";
 import ProductPanel from "../modules/admin/ProductPanel";
 import OrderPanel from "../modules/admin/OrderPanel";
 import api from "../lib/api";
@@ -13,14 +12,6 @@ export default function AdminHome() {
   const navigate = useNavigate();
   const [activePanel, setActivePanel] = useState("PRODUCTS");
 
-  const [ordersList, setOrdersList] = useState(INITIAL_MOCK_ORDERS);
-
-  const [orderStatusFilter, setOrderStatusFilter] = useState("All");
-  const [expandedOrders, setExpandedOrders] = useState({ 84729103: true });
-
-  const ITEMS_PER_PAGE = 3;
-  const [orderPage, setOrderPage] = useState(1);
-
   const [isLoading, setLoading] = useState(false);
 
   const [adminStatistics, setAdminStatistics] = useState({
@@ -29,35 +20,6 @@ export default function AdminHome() {
     productShortages: [],
     totalStockVolume: 0,
   });
-
-  const toggleOrderExpand = (orderId) => {
-    setExpandedOrders((prev) => ({ ...prev, [orderId]: !prev[orderId] }));
-  };
-
-  const handleOrderStatusChange = (orderId, newStatus) => {
-    setOrdersList((prev) =>
-      prev.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order,
-      ),
-    );
-    window.alert(`Order #${orderId} successfully updated to: ${newStatus}`);
-  };
-
-  const filteredOrders = useMemo(() => {
-    return orderStatusFilter === "All"
-      ? ordersList
-      : ordersList.filter((o) => o.status === orderStatusFilter);
-  }, [orderStatusFilter, ordersList]);
-
-  const paginatedOrders = useMemo(() => {
-    const startIndex = (orderPage - 1) * ITEMS_PER_PAGE;
-    return filteredOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredOrders, orderPage]);
-
-  const handleOrderStatusFilterChange = (e) => {
-    setOrderStatusFilter(e.target.value);
-    setOrderPage(1);
-  };
 
   const getStatistics = async () => {
     setLoading(true);
@@ -69,7 +31,7 @@ export default function AdminHome() {
     } catch (error) {
       toast.error(`Failed to fetch statistics: ${error.response.message}`);
     } finally {
-      () => setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -159,22 +121,7 @@ export default function AdminHome() {
           </button>
         </div>
 
-        {activePanel === "PRODUCTS" ? (
-          <ProductPanel />
-        ) : (
-          <OrderPanel
-            orderStatusFilter={orderStatusFilter}
-            handleOrderStatusChange={handleOrderStatusChange}
-            handleOrderStatusFilterChange={handleOrderStatusFilterChange}
-            paginatedOrders={paginatedOrders}
-            expandedOrders={expandedOrders}
-            toggleOrderExpand={toggleOrderExpand}
-            filteredOrders={filteredOrders}
-            orderPage={orderPage}
-            totalOrderPages={1}
-            setOrderPage={setOrderPage}
-          />
-        )}
+        {activePanel === "PRODUCTS" ? <ProductPanel /> : <OrderPanel />}
       </main>
     </div>
   );
