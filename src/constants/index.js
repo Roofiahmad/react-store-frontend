@@ -48,6 +48,7 @@ export const BADGE_COLORS = {
 };
 
 export const ALL_CATEGORY = "All";
+export const ALL_CATEGORY_ID = 0;
 
 export const SORT_BY = [
   {
@@ -98,10 +99,18 @@ export const ORDER_STEP = {
   [ORDER_STATUS.DELIVERED]: 5,
 };
 
-export const STATUS_INFO = {
+export const CUSTOMER_ORDER_STATUS_INFO = {
   PENDING: "Awaiting Secure Payment",
   PAID: "Payment Verified! You're Locked In 🚀",
   PROCESSED: "Our Team is Prepping Your Pack 📦",
   SHIPPED: "Handed Off to Our Trusted Courier 🚚",
   DELIVERED: "Delivered! Enjoy Your New Gear 🎉",
+};
+
+export const ADMIN_ORDER_STATUS_INFO = {
+  PENDING: "Awaiting Secure Payment ⏳",
+  PAID: "Payment Verified! Locked In 🚀",
+  PROCESSED: "Prepping Pack inside Warehouse 📦",
+  SHIPPED: "Dispatched with Trusted Courier 🚚",
+  DELIVERED: "Delivered • Goods Received 🎉",
 };

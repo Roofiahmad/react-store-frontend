@@ -7,7 +7,7 @@ import Navbar from "../components/Navbar";
 import api from "../lib/api";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import OrderProgressBar from "../components/OrderProgressBar";
-import { STATUS_INFO } from "../constants";
+import { CUSTOMER_ORDER_STATUS_INFO } from "../constants";
 
 const PAYMENT_METHOD = "Credit Card (Visa ending in 2424)";
 
@@ -62,7 +62,7 @@ export default function OrderDetailsPage() {
                 #ORD-{orderDetails?.id}
               </h1>
               <span className="bg-green-50 text-green-700 border border-green-100 text-[10px] font-bold px-2.5 py-0.5 rounded-md uppercase tracking-wide">
-                {STATUS_INFO[orderDetails?.status]}
+                {CUSTOMER_ORDER_STATUS_INFO[orderDetails?.status]}
               </span>
             </div>
             <p className="text-xs text-gray-400 font-medium">

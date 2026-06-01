@@ -22,6 +22,9 @@ export default function SearchResults() {
   const categoryQueryId = searchParams.get("category") || ALL.id;
   const currentPage = Number(searchParams.get("page")) || 1;
 
+  // 📝 Local state for the inline search bar query text
+  const [searchInput, setSearchInput] = useState(searchQuery);
+
   const [viewType, setViewType] = useState("grid");
   const [sortBy, setSortBy] = useState(SORT_BY[0].value);
   const [isLoading, setLoading] = useState(false);
@@ -32,6 +35,31 @@ export default function SearchResults() {
 
   const limit = 6;
   const totalPages = Math.ceil(totalItems / limit);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSearchInput(searchQuery);
+  }, [searchQuery]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setSearchParams({
+      q: searchInput.trim(),
+      badge: badgeQuery,
+      category: categoryQueryId,
+      page: 1,
+    });
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setSearchParams({
+      q: "",
+      badge: badgeQuery,
+      category: categoryQueryId,
+      page: 1,
+    });
+  };
 
   const handlePageChange = (pageNumber) => {
     setSearchParams({
@@ -127,7 +155,8 @@ export default function SearchResults() {
       {isLoading && <LoadingSpinner />}
       <Navbar />
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
+        
         <ResultInformation
           badgeQuery={badgeQuery}
           totalItems={totalItems}
@@ -135,7 +164,9 @@ export default function SearchResults() {
           setViewType={setViewType}
           viewType={viewType}
         />
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
           <FilterCard
             sortBy={sortBy}
             setSortBy={setSortBy}
@@ -143,7 +174,50 @@ export default function SearchResults() {
             categoryQueryId={categoryQueryId}
             handleCategorySelect={handleCategorySelect}
           />
-          <div className="lg:col-span-9 space-y-8">
+
+          <div className="lg:col-span-9 space-y-6">
+            
+            {/* 🔎 PROPORTIONAL PRO SEARCH FIELD BADGE (Grid-aligned) */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-3.5 shadow-3xs">
+              <form onSubmit={handleSearchSubmit} className="flex gap-2">
+                <div className="relative flex-1">
+                  
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.608 10.608Z" />
+                    </svg>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    placeholder="Search product"
+                    className="w-full bg-gray-50 border border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl pl-10 pr-10 py-2.5 text-xs font-semibold focus:outline-none transition-all placeholder:text-gray-400 text-gray-800 shadow-inner"
+                  />
+
+                  {searchInput && (
+                    <button
+                      type="button"
+                      onClick={handleClearSearch}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-colors shadow-2xs cursor-pointer select-none"
+                >
+                  Search
+                </button>
+              </form>
+            </div>
+
             {totalItems === 0 ? (
               <EmptyResult />
             ) : (
@@ -164,6 +238,7 @@ export default function SearchResults() {
               </>
             )}
           </div>
+
         </div>
       </main>
     </div>
