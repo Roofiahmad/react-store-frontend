@@ -117,7 +117,7 @@ export default function OrderDetailsPage() {
     );
     const filteredReview = reviewItems.filter(
       (r) =>
-        !alreadyReviewedProductIds.includes(r.productId) || !r.comment.trim(),
+        !alreadyReviewedProductIds.includes(r.productId) && r.comment.trim(),
     );
 
     try {
