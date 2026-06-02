@@ -6,6 +6,7 @@ import {
 } from "../../constants";
 import api from "../../lib/api";
 import { useEffect, useState } from "react";
+import { formatIsoDate } from "../../utils/date";
 
 const OrderPanel = () => {
   const [adminOrders, setAdminOrders] = useState([
@@ -129,8 +130,6 @@ const OrderPanel = () => {
     getOrders();
   }, [page, selectedStatus]);
 
-  console.log(adminOrders, "orders");
-
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-2xs">
@@ -169,7 +168,7 @@ const OrderPanel = () => {
                     #ORD-{order.id}
                   </span>
                   <span className="text-[10px] text-gray-400 font-mono font-medium">
-                    {order.createdAt}
+                    {formatIsoDate(order.createdAt)}
                   </span>
                 </div>
                 <div className="space-y-1 bg-gray-50/60 border border-gray-100 rounded-xl p-3">

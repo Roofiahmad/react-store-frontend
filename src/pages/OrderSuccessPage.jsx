@@ -46,8 +46,6 @@ export default function OrderSuccessPage() {
     return () => controller.abort();
   }, [orderId]);
 
-  console.log(setOrderDetails, "setOrderDetails");
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center">

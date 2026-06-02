@@ -10,8 +10,6 @@ export default function OrderProgressBar({ orderDetails }) {
   const activeBarWidth =
     currentStepIndex > 0 ? currentStepIndex * segmentWidth : 0;
 
-  console.log(orderDetails, "orderDetails");
-
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs max-w-3xl mx-auto space-y-6">
       <div className="flex justify-between items-center border-b border-gray-100 pb-3 text-xs">

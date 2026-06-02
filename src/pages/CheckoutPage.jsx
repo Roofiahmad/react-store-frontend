@@ -150,7 +150,6 @@ export default function CheckoutPage() {
       const response = await api.post("/checkout", payload);
 
       if (response.data.success) {
-        console.log(response.data.data, "response.data.data");
         const { checkoutUrl } = response.data.data;
         toast.info(
           "Order session registered! Handing off to Stripe Gateway...",

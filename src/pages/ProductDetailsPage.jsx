@@ -120,8 +120,6 @@ export default function ProductDetailsPage() {
     window.scrollTo(SCROLL_TOP_BEHAVIOR);
   }, [productId]);
 
-  console.log(userReviews);
-
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans antialiased pb-16">
       {isLoading && <LoadingSpinner />}
