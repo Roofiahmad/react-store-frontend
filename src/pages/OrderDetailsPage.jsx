@@ -115,9 +115,10 @@ export default function OrderDetailsPage() {
     const alreadyReviewedProductIds = everSubmittedReview.map(
       (r) => r.productId,
     );
+
     const filteredReview = reviewItems.filter(
       (r) =>
-        !alreadyReviewedProductIds.includes(r.productId) && r.comment.trim(),
+        !alreadyReviewedProductIds.includes(+r.productId) && r.comment.trim(),
     );
 
     try {
@@ -162,7 +163,7 @@ export default function OrderDetailsPage() {
             <p className="text-xs text-gray-400 font-semibold tracking-wide">
               Transaction Manifest Settled on:{" "}
               <span className="font-mono text-gray-500 font-medium">
-                {formatIsoDate(orderDetails?.createdAt, "MM/dd/yyyy, HH:mm:ss")}
+                {formatIsoDate(orderDetails?.createdAt, "dd-MM-yyyy, HH:mm:ss")}
               </span>
             </p>
           </div>
