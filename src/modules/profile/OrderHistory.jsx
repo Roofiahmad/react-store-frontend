@@ -1,9 +1,9 @@
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "react-toastify";
-import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { CUSTOMER_ORDER_ITEM_PER_PAGE, PATHS } from "../../constants";
 import api from "../../lib/api";
+import { formatIsoDate } from "../../utils/date";
 
 const OrderHistory = () => {
   const navigate = useNavigate();
@@ -83,7 +83,7 @@ const OrderHistory = () => {
                 <p className="font-bold text-gray-900">#ORD-{ord.id}</p>
                 <p className="text-gray-400">
                   Purchased clearing on:{" "}
-                  {format(parseISO(ord.createdAt), "MM/dd/yyyy, HH:mm:ss")}
+                  {formatIsoDate(ord.createdAt, "MM/dd/yyyy, HH:mm:ss")}
                 </p>
               </div>
               <div className="flex items-center justify-between sm:justify-end gap-6">

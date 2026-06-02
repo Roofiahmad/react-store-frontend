@@ -6,32 +6,7 @@ import { toast } from "react-toastify";
 import api from "../lib/api";
 import { BADGE_COLORS, PATHS, SCROLL_TOP_BEHAVIOR } from "../constants";
 import { useShop } from "../context/ShopContext";
-
-const INITIAL_PRODUCT = {
-  reviews: [
-    {
-      id: 1,
-      author: "Budi Santoso",
-      rating: 5,
-      date: "2026-05-18",
-      text: "Suaranya jernih banget, ANC-nya beneran kedap pas dipake di MRT Jakarta. Worth every Rupiah!",
-    },
-    {
-      id: 2,
-      author: "Siti Rahma",
-      rating: 4,
-      date: "2026-05-10",
-      text: "Bass is tight and clean. Battery life is amazing. Material slightly warm on the ears after 4 hours straight.",
-    },
-    {
-      id: 3,
-      author: "Kevin Wijaya",
-      rating: 5,
-      date: "2026-04-28",
-      text: "Excellent instrument separation. Fast delivery to Surabaya!",
-    },
-  ],
-};
+import { formatIsoDate } from "../utils/date";
 
 export default function ProductDetailsPage() {
   const navigate = useNavigate();
@@ -43,14 +18,23 @@ export default function ProductDetailsPage() {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [isLoading, setLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-
-  const [reviewList] = useState(INITIAL_PRODUCT.reviews);
-
-  // Math Metrics Computation Engine
-  const totalReviews = reviewList.length;
-  const averageRating = (
-    reviewList.reduce((sum, r) => sum + r.rating, 0) / totalReviews
-  ).toFixed(1);
+  const [userReviews, setUserReviews] = useState({
+    ratingSummary: {
+      reviewCount: 0,
+      averageRating: 0,
+    },
+    reviews: [
+      {
+        comment: "",
+        createdAt: "",
+        id: 0,
+        productId: 0,
+        rating: 0,
+        updatedAt: "",
+        userName: "",
+      },
+    ],
+  });
 
   useEffect(() => {
     if (!productId) return;
@@ -60,15 +44,29 @@ export default function ProductDetailsPage() {
     async function fetchProductById() {
       try {
         setLoading(true);
-        const response = await api.get(`/products/${productId}`, {
+        const getProductPromise = api.get(`/products/${productId}`, {
           signal: controller.signal,
         });
 
-        if (response.data.success) {
-          setProduct(response.data.data);
-          setSelectedImage(response.data.data.gallery[0]);
+        const getReviewsPromise = api.get(`/products/${productId}/reviews`, {
+          signal: controller.signal,
+        });
+
+        const [productResponse, reviewsResponse] = await Promise.all([
+          getProductPromise,
+          getReviewsPromise,
+        ]);
+
+        if (productResponse.data.success) {
+          setProduct(productResponse.data.data);
+          setSelectedImage(productResponse.data.data.gallery[0]);
+        }
+
+        if (reviewsResponse.data.success) {
+          setUserReviews(reviewsResponse.data.data);
         }
       } catch (err) {
+        console.log(err);
         if (err.name !== "CanceledError") {
           toast.error("Could not retrieve product details.");
         }
@@ -122,6 +120,8 @@ export default function ProductDetailsPage() {
     window.scrollTo(SCROLL_TOP_BEHAVIOR);
   }, [productId]);
 
+  console.log(userReviews);
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans antialiased pb-16">
       {isLoading && <LoadingSpinner />}
@@ -166,14 +166,18 @@ export default function ProductDetailsPage() {
               {/* Star Indicator Panel */}
               <div className="flex items-center gap-2 mt-2.5">
                 <div className="flex text-amber-400 items-center">
-                  {"★".repeat(Math.round(averageRating))}
-                  {"☆".repeat(5 - Math.round(averageRating))}
+                  {"★".repeat(
+                    Math.round(userReviews?.ratingSummary?.averageRating),
+                  )}
+                  {"☆".repeat(
+                    5 - Math.round(userReviews?.ratingSummary?.averageRating),
+                  )}
                 </div>
                 <span className="text-xs font-bold text-gray-700">
-                  {averageRating} out of 5
+                  {userReviews?.ratingSummary?.averageRating} out of 5
                 </span>
                 <span className="text-xs text-gray-400">
-                  ({totalReviews} consumer reviews)
+                  ({userReviews?.ratingSummary?.reviewCount} consumer reviews)
                 </span>
               </div>
             </div>
@@ -230,7 +234,7 @@ export default function ProductDetailsPage() {
             <h2 className="text-xs font-black uppercase tracking-wider text-gray-700 flex items-center gap-2">
               <span>User Reviews</span>
               <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full text-[10px] font-black border border-blue-100">
-                {totalReviews}
+                {userReviews?.ratingSummary?.reviewCount}
               </span>
             </h2>
             <span className="text-[10px] text-gray-400 font-medium">
@@ -242,8 +246,7 @@ export default function ProductDetailsPage() {
           <div className="p-6 lg:p-8">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               <div className="lg:col-span-12">
-                {/* 🌟 CONDITION A: BLANK SLATE FALLBACK (If no reviews exist) */}
-                {reviewList.length === 0 ? (
+                {userReviews?.reviews?.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -270,9 +273,9 @@ export default function ProductDetailsPage() {
                 ) : (
                   /* 🌟 CONDITION B: STREAMING ACTIVE FEED LIST */
                   <div className="divide-y divide-gray-100 space-y-6">
-                    {reviewList.map((rev) => {
-                      const initials = rev.author
-                        ? rev.author
+                    {userReviews.reviews.map((rev) => {
+                      const initials = rev.userName
+                        ? rev.userName
                             .split(" ")
                             .map((n) => n[0])
                             .join("")
@@ -294,10 +297,10 @@ export default function ProductDetailsPage() {
                           <div className="flex-grow text-sm space-y-1">
                             <div className="flex justify-between items-baseline">
                               <p className="font-black text-gray-900 capitalize text-xs tracking-tight">
-                                {rev.author}
+                                {rev.userName}
                               </p>
                               <span className="text-[10px] text-gray-400 font-medium">
-                                {rev.date}
+                                {formatIsoDate(rev.updatedAt, "dd-MM-yyyy")}
                               </span>
                             </div>
 
@@ -310,7 +313,7 @@ export default function ProductDetailsPage() {
                             </div>
 
                             <p className="text-gray-600 font-medium text-xs leading-relaxed pt-0.5">
-                              {rev.text}
+                              {rev.comment}
                             </p>
                           </div>
                         </div>

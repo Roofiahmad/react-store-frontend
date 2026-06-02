@@ -1,5 +1,5 @@
 import { ORDER_STATUS } from "../constants";
-import { format, parseISO } from "date-fns";
+import { formatIsoDate } from "../utils/date";
 
 export default function OrderProgressBar({ orderDetails }) {
   const statusSteps = Object.values(ORDER_STATUS);
@@ -49,11 +49,10 @@ export default function OrderProgressBar({ orderDetails }) {
             const isCompleted = idx <= currentStepIndex;
             const isCurrent = idx === currentStepIndex;
 
-            const statusTimeStamps =
-              orderDetails?.statusHistory.find((s) => s.status == statusValue)
-                ?.createdAt || new Date().toISOString();
-            const dateObj = parseISO(statusTimeStamps);
-            const statusDate = format(dateObj, "d MMMM, HH:mm");
+            const createdAt = orderDetails?.statusHistory.find(
+              (s) => s.status == statusValue,
+            )?.createdAt;
+            const statusDate = formatIsoDate(createdAt, "d MMMM, HH:mm");
 
             return (
               <div key={statusValue} className="space-y-2">

@@ -5,7 +5,7 @@ import { PATHS } from "../constants";
 import { toast } from "react-toastify";
 import api, { setAuthToken } from "../lib/api";
 import { LoadingSpinner } from "../components/LoadingSpinner";
-import { format, parseISO } from "date-fns";
+import { formatIsoDate } from "../utils/date";
 
 export default function OrderSuccessPage() {
   const navigate = useNavigate();
@@ -112,10 +112,7 @@ export default function OrderSuccessPage() {
                 Logistics Date
               </p>
               <p className="font-bold text-gray-700">
-                {format(
-                  parseISO(orderDetails?.createdAt),
-                  "MM/dd/yyyy, HH:mm:ss",
-                )}
+                {formatIsoDate(orderDetails?.createdAt, "MM/dd/yyyy, HH:mm:ss")}
               </p>
             </div>
           </div>
