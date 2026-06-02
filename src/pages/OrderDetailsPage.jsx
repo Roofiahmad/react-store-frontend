@@ -115,8 +115,8 @@ export default function OrderDetailsPage() {
     const alreadyReviewedProductIds = everSubmittedReview.map(
       (r) => r.productId,
     );
-    const filteredReview = reviewItems.filter((r) =>
-      alreadyReviewedProductIds.includes(r.productId),
+    const filteredReview = reviewItems.filter(
+      (r) => !alreadyReviewedProductIds.includes(r.productId),
     );
 
     try {
