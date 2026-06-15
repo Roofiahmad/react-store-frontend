@@ -14,6 +14,7 @@ export default function CheckoutPage() {
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [isAddressLoading, setIsAddressLoading] = useState(false);
+  const [isCartLoading, setIsCartLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -29,85 +30,88 @@ export default function CheckoutPage() {
     },
   });
 
+  async function fetchUserCart(controller, addressId) {
+    if(!addressId) return;
+    
+    try {
+      setIsCartLoading(true);
+      const response = await api.get("/carts?addressId=" + addressId, {
+        signal: controller.signal,
+      });
+
+      if (response.data.success) {
+        setCart(response.data.data);
+      }
+    } catch (err) {
+      if (err.name !== "CanceledError") {
+        toast.error("Failed to fetch user cart");
+      }
+    } finally {
+      setIsCartLoading(false);
+    }
+  }
+
+  async function fetchUserAddresses(controller) {
+    try {
+      setIsAddressLoading(true);
+      const response = await api.get("/address", {
+        signal: controller.signal,
+      });
+
+      if (response.data.success) {
+        const addressList = response.data.data || [];
+        setSavedAddresses(addressList);
+
+        const defaultAddress =
+          addressList.find((a) => a.isPrimary) || addressList[0];
+        if (defaultAddress) {
+          setSelectedAddress(defaultAddress);
+        }
+      }
+    } catch (err) {
+      if (err.name !== "CanceledError") {
+        toast.error("Failed to fetch user addresses");
+      }
+    } finally {
+      setIsAddressLoading(false);
+    }
+  }
+
+  async function fetchUserProfile(controller) {
+    try {
+      setIsAddressLoading(true);
+      const response = await api.get("/profile", {
+        signal: controller.signal,
+      });
+
+      if (response.data.success) {
+        const { name: fullName, email, phoneNumber } = response.data.data;
+        setValues(
+          {
+            fullName,
+            phoneNumber,
+            email,
+          },
+          { shouldValidate: true },
+        );
+      }
+    } catch (err) {
+      if (err.name !== "CanceledError") {
+        toast.error("Failed to fetch user profile");
+      }
+    } finally {
+      setIsAddressLoading(false);
+    }
+  }
+
   useEffect(() => {
     const controller = new AbortController();
-    async function fetchUserAddresses() {
-      try {
-        setIsAddressLoading(true);
-        const response = await api.get("/address", {
-          signal: controller.signal,
-        });
-
-        if (response.data.success) {
-          const addressList = response.data.data || [];
-          setSavedAddresses(addressList);
-
-          const defaultAddress =
-            addressList.find((a) => a.isPrimary) || addressList[0];
-          if (defaultAddress) {
-            setSelectedAddress(defaultAddress);
-          }
-        }
-      } catch (err) {
-        if (err.name !== "CanceledError") {
-          toast.error("Failed to fetch user addresses");
-        }
-      } finally {
-        setIsAddressLoading(false);
-      }
-    }
-
-    async function fetchUserCart() {
-      try {
-        setIsAddressLoading(true);
-        const response = await api.get("/carts", {
-          signal: controller.signal,
-        });
-
-        if (response.data.success) {
-          setCart(response.data.data);
-        }
-      } catch (err) {
-        if (err.name !== "CanceledError") {
-          toast.error("Failed to fetch user cart");
-        }
-      } finally {
-        setIsAddressLoading(false);
-      }
-    }
-
-    async function fetchUserProfile() {
-      try {
-        setIsAddressLoading(true);
-        const response = await api.get("/profile", {
-          signal: controller.signal,
-        });
-
-        if (response.data.success) {
-          const { name: fullName, email, phoneNumber } = response.data.data;
-          setValues(
-            {
-              fullName,
-              phoneNumber,
-              email,
-            },
-            { shouldValidate: true },
-          );
-        }
-      } catch (err) {
-        if (err.name !== "CanceledError") {
-          toast.error("Failed to fetch user profile");
-        }
-      } finally {
-        setIsAddressLoading(false);
-      }
-    }
-
-    fetchUserProfile();
-    fetchUserAddresses();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchUserProfile(controller);
+    fetchUserAddresses(controller);
 
     cartPollingInterval.current = setInterval(() => {
-      fetchUserCart();
+      fetchUserCart(controller);
     }, 1000);
 
     return () => {
@@ -166,6 +170,13 @@ export default function CheckoutPage() {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    if (!selectedAddress?.id) return;
+    const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchUserCart(controller, selectedAddress?.id);
+  }, [selectedAddress?.id]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans antialiased py-10">
@@ -434,6 +445,7 @@ export default function CheckoutPage() {
                   disabled={
                     isSubmitting ||
                     isAddressLoading ||
+                    isCartLoading ||
                     savedAddresses.length === 0 ||
                     cart?.items.length === 0
                   }
